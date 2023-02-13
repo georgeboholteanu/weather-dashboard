@@ -59,7 +59,7 @@ function selectImage (id) {
 function createWeatherCard (cardDate, cardIcon, cardTemperature, cardWind, cardHumidity, container) {
     let card = 
         `
-        <div class="weatherCard col bg-info">
+        <div class="weatherCard col">
             <p id="cardDate">${cardDate}</p>
             <img id="cardIcon" src='${cardIcon}'/>
             <p id="cardTemperature">Temperature: ${cardTemperature}°C</p>
@@ -71,37 +71,86 @@ function createWeatherCard (cardDate, cardIcon, cardTemperature, cardWind, cardH
     $(card).appendTo(container);
 }
 
+function capitalizeFirstLetter(string) {
+    return string.charAt(0).toUpperCase() + string.slice(1);
+}
 
-function getCurentWeather (city) {
+function getWeather (city) {
     
     queryURL = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=90236eb36222bea0f6da79197481db9c`
-    
+
     $.ajax({
         url: queryURL,
         method: "GET"
         })
         .then(function(response) {            
             console.log(response);
-            
-            let date = city + " ( " + moment() + " ) ";
-            let iconCode = response.weather[0].icon;
-            let iconUrl = `https://openweathermap.org/img/wn/${iconCode}@2x.png`
-            let temperature = ((response.main.temp - 273.15)).toFixed(2);                
-            let wind = response.wind.speed;
-            let humidity = response.main.humidity;
-            let country = response.sys.country;
-            
-            if ($("#search-input").val() !== "") {
-                $("#location").html($("#search-input").val().toUpperCase() + ", " + country);
+
+            if (response.cod == 200 && response) {  
+
+                let date = capitalizeFirstLetter(city) + " ( " + moment().format('dddd, MMMM Do YYYY') + " ) ";
+                let iconCode = response.weather[0].icon;
+                let iconUrl = `https://openweathermap.org/img/wn/${iconCode}@2x.png`;
+                let temperature = ((response.main.temp - 273.15)).toFixed(2);                
+                let wind = response.wind.speed;
+                let humidity = response.main.humidity;
+                let country = response.sys.country;
+
+                createWeatherCard(date, iconUrl, temperature, wind, humidity, $("#today"))                
+                
             } else {
-                $("#location").html(city.toUpperCase() + " | " + country);
+                console.log("server error")
             }
 
+            
+            // if ($("#search-input").val() !== "") {
+            //     $("#location").html($("#search-input").val().toUpperCase() + ", " + country);
+            // } else {
+            //     $("#location").html(city.toUpperCase() + " | " + country);
+            // }
 
-            createWeatherCard(date, iconUrl, temperature, wind, humidity, $("#today"))
         });
 }
 
-getCurentWeather("london")
+function getForecast (city) {
+    queryURL = `https://api.openweathermap.org/data/2.5/forecast?q=${city}&cnt=5&appid=90236eb36222bea0f6da79197481db9c&cnt=5`
+    
+    $.ajax({
+        url: queryURL,
+        method: "GET"
+        })
+        .then(function(response) {            
+            console.log(response.list);         
 
+            if (response.cod == 200 && response.list) {  
+
+                let forecastArr = response.list;
+                let count = 1;  
+                forecastArr.forEach(element => {
+                    
+                    let date = moment().add(count, 'days').format('dddd, MMMM Do YYYY');
+                    let iconCode = element.weather[0].icon;
+                    let iconUrl = `https://openweathermap.org/img/wn/${iconCode}@2x.png`
+                    let temperature = ((element.main.temp - 273.15)).toFixed(2);                
+                    let wind = element.wind.speed;
+                    let humidity = element.main.humidity;
+                    let country = element.sys.country;
+                    
+                    count++;
+                    // if ($("#search-input").val() !== "") {
+                    //     $("#location").html($("#search-input").val().toUpperCase() + ", " + country);
+                    // } else {
+                    //     $("#location").html(city.toUpperCase() + " | " + country);
+                    // }
+
+                    createWeatherCard(date, iconUrl, temperature, wind, humidity, $("#forecast"))
+                })
+            } else {
+                console.log ("server error")
+            }
+        });
+}
+
+getWeather("madrid")
+getForecast("madrid")
 
