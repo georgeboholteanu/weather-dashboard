@@ -59,10 +59,10 @@ function selectImage (id) {
 function createWeatherCard (cardDate, cardIcon, cardTemperature, cardWind, cardHumidity, container) {
     let card = 
         `
-        <div class="weatherCard col">
-            <p id="cardDate">${cardDate}</p>
+        <div class="weatherCard my-2 col border">
+            <p id="cardDate"><strong>${cardDate}</strong></p>
             <img id="cardIcon" src='${cardIcon}'/>
-            <p id="cardTemperature">Temperature: ${cardTemperature} °C</p>
+            <p id="cardTemperature">Temp: ${cardTemperature} °C</p>
             <p id="cardWind">Wind: ${cardWind} km/h</p>
             <p id="cardHumidity">Humidity: ${cardHumidity} %</p>
         </div>
@@ -86,29 +86,29 @@ function getWeather (city) {
         .then(function(response) {            
             console.log(response);
 
-            if (response.cod == 200 && response) {  
+            if (response.cod == 200 && response) { 
 
-                let date = capitalizeFirstLetter(city) + " ( " + moment().format('dddd, MMMM Do YYYY') + " ) ";
+                let country = response.sys.country;
+                let date = capitalizeFirstLetter(city) + " | " + country + " ( " + moment().format('dddd, MMMM Do YYYY') + " ) ";
                 let iconCode = response.weather[0].icon;
                 let iconUrl = `https://openweathermap.org/img/wn/${iconCode}@2x.png`;
                 let temperature = ((response.main.temp - 273.15)).toFixed(2);                
                 let wind = (response.wind.speed * 3.6).toFixed(2); // convert meter/sec => km/h
                 let humidity = response.main.humidity;
-                let country = response.sys.country;
+                
 
-                createWeatherCard(date, iconUrl, temperature, wind, humidity, $("#today"))                
+                createWeatherCard(date, iconUrl, temperature, wind, humidity, $("#today")) 
+
+                // set custom image background based on search location
+                // let imageLink = selectImage(response.weather[0].id);
+                // $("#today").css({
+                //     "background-image": "url(" + imageLink + ")",
+
+                // });  
                 
             } else {
                 console.log("server error")
             }
-
-            
-            // if ($("#search-input").val() !== "") {
-            //     $("#location").html($("#search-input").val().toUpperCase() + ", " + country);
-            // } else {
-            //     $("#location").html(city.toUpperCase() + " | " + country);
-            // }
-
         });
 }
 
@@ -134,17 +134,12 @@ function getForecast (city) {
                     let temperature = ((element.main.temp - 273.15)).toFixed(2);                
                     let wind = (element.wind.speed * 3.6).toFixed(2); // convert meter/sec => km/h
                     let humidity = element.main.humidity;
-                    let country = element.sys.country;
-                    
+
                     count++;
-                    // if ($("#search-input").val() !== "") {
-                    //     $("#location").html($("#search-input").val().toUpperCase() + ", " + country);
-                    // } else {
-                    //     $("#location").html(city.toUpperCase() + " | " + country);
-                    // }
 
                     createWeatherCard(date, iconUrl, temperature, wind, humidity, $("#forecast"))
-                })
+                });
+                $("#forecastTitle").removeClass("d-none");
             } else {
                 console.log ("server error")
             }
@@ -152,11 +147,18 @@ function getForecast (city) {
 }
 
 function quickWeatherCheck (clicked_id) {
-    getCurentWeather(clicked_id);
+
+    getWeather(clicked_id);
     getForecast(clicked_id);
+    getHistory() 
 }
 
 function getHistory () {
+    // clear weather cards
+    document.querySelectorAll(".weatherCard").forEach(el => el.remove());
+    // clear existing search history buttons
+    document.querySelectorAll(".history-button").forEach(el => el.remove());
+
     if (JSON.parse(localStorage.getItem("cities")) !== null) {
 
         // filter only x amount of the recent history
@@ -173,9 +175,9 @@ function getHistory () {
     }    
 }
 
-
 // search weather button event
 $("#search-button").on("click", function(){   
+
     // store input values to local storage
     if (JSON.parse(localStorage.getItem("cities")) !== null) {
 
@@ -194,13 +196,10 @@ $("#search-button").on("click", function(){
         console.log("this object does not exist in local storage")
     }
 
-    // clear weather cards
-    document.querySelectorAll(".weatherCard").forEach(el => el.remove());
 
-    // clear existing buttons
-    document.querySelectorAll(".history-button").forEach(el => el.remove());
-    
     if ($("#search-input").val() !== "") {
+
+        // get data
         getWeather($("#search-input").val());
         getForecast($("#search-input").val());
         getHistory();  
@@ -208,9 +207,6 @@ $("#search-button").on("click", function(){
         console.log("modal error")
     }
 
-
 });
 
-// getHistory();
-
-// getWeather("madrid");
+getHistory();
