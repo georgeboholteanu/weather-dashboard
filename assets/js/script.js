@@ -62,9 +62,9 @@ function createWeatherCard (cardDate, cardIcon, cardTemperature, cardWind, cardH
         <div class="weatherCard col">
             <p id="cardDate">${cardDate}</p>
             <img id="cardIcon" src='${cardIcon}'/>
-            <p id="cardTemperature">Temperature: ${cardTemperature}°C</p>
-            <p id="cardWind">Wind: ${cardWind} meter/sec</p>
-            <p id="cardHumidity">Humidity: ${cardHumidity}%</p>
+            <p id="cardTemperature">Temperature: ${cardTemperature} °C</p>
+            <p id="cardWind">Wind: ${cardWind} km/h</p>
+            <p id="cardHumidity">Humidity: ${cardHumidity} %</p>
         </div>
         `;
 
@@ -92,7 +92,7 @@ function getWeather (city) {
                 let iconCode = response.weather[0].icon;
                 let iconUrl = `https://openweathermap.org/img/wn/${iconCode}@2x.png`;
                 let temperature = ((response.main.temp - 273.15)).toFixed(2);                
-                let wind = response.wind.speed;
+                let wind = (response.wind.speed * 3.6).toFixed(2); // convert meter/sec => km/h
                 let humidity = response.main.humidity;
                 let country = response.sys.country;
 
@@ -132,7 +132,7 @@ function getForecast (city) {
                     let iconCode = element.weather[0].icon;
                     let iconUrl = `https://openweathermap.org/img/wn/${iconCode}@2x.png`
                     let temperature = ((element.main.temp - 273.15)).toFixed(2);                
-                    let wind = element.wind.speed;
+                    let wind = (element.wind.speed * 3.6).toFixed(2); // convert meter/sec => km/h
                     let humidity = element.main.humidity;
                     let country = element.sys.country;
                     
@@ -151,6 +151,66 @@ function getForecast (city) {
         });
 }
 
-getWeather("madrid")
-getForecast("madrid")
+function quickWeatherCheck (clicked_id) {
+    getCurentWeather(clicked_id);
+    getForecast(clicked_id);
+}
 
+function getHistory () {
+    if (JSON.parse(localStorage.getItem("cities")) !== null) {
+
+        // filter only x amount of the recent history
+        let newCities = JSON.parse(localStorage.getItem("cities")).filter(x => x !== "").slice(-4).reverse(); 
+    
+        // write buttons to div history
+        newCities.forEach(element => {
+
+            $(`<button class='history-button btn btn-secondary my-1' id='${element}' onclick='quickWeatherCheck(this.id)'/>`).html(element).appendTo($("#history"));
+        });
+        
+    } else {        
+        console.log("history cities is empty");
+    }    
+}
+
+
+// search weather button event
+$("#search-button").on("click", function(){   
+    // store input values to local storage
+    if (JSON.parse(localStorage.getItem("cities")) !== null) {
+
+        cities = JSON.parse(localStorage.getItem("cities")).filter(x => x !== "");
+
+        if (!cities.includes($("#search-input").val())) {
+
+            cities.push($("#search-input").val());
+        }
+
+        localStorage.setItem("cities", JSON.stringify(cities));  
+        
+    } else {
+        localStorage.setItem("cities", JSON.stringify(cities));       
+ 
+        console.log("this object does not exist in local storage")
+    }
+
+    // clear weather cards
+    document.querySelectorAll(".weatherCard").forEach(el => el.remove());
+
+    // clear existing buttons
+    document.querySelectorAll(".history-button").forEach(el => el.remove());
+    
+    if ($("#search-input").val() !== "") {
+        getWeather($("#search-input").val());
+        getForecast($("#search-input").val());
+        getHistory();  
+    } else {
+        console.log("modal error")
+    }
+
+
+});
+
+// getHistory();
+
+// getWeather("madrid");
